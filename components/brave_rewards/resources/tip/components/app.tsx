@@ -63,9 +63,9 @@ export class App extends React.Component<Props, {}> {
           url={url}
           monthly={monthly}
           publisher={publisher}
-          mediaMetaData={mediaMetaData}
           monthlyDate={monthlyDate}
           amount={currentTipAmount}
+          mediaMetaData={mediaMetaData}
         />
       )
     }

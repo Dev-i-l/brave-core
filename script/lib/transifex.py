@@ -22,6 +22,10 @@ transifex_handled_slugs = [
     'brave_extension',
     'rewards_extension'
 ]
+# List of HTML tags that we allowed to be present inside the translated text.
+allowed_html_tags = [
+  'a', 'abbr', 'b', 'br', 'h4', 'li', 'ol', 'p', 'span', 'strong', 'ul'
+]
 
 
 def transifex_name_from_filename(source_file_path, filename):
@@ -128,6 +132,9 @@ def get_transifex_translation_file_content(source_file_path, filename,
     elif ext == '.grd':
         # For .grd and .json files, for some reason Transifex puts a \\" and \'
         content = content.replace('\\"', '"').replace("\\'", "'")
+        content_file = open(r"c:\max\tmp\TransifexCurrent.txt","w")
+        content_file.write(content)
+        content_file.close()
         # Make sure it's parseable
         lxml.etree.fromstring(content)
     return content
@@ -168,13 +175,63 @@ def fixup_bad_ph_tags_from_raw_transifex_string(xml_content):
     return xml_content
 
 
+def validate_elements_tags(elements):
+    """Recursively validates elements for being in the allow list"""
+    errors = None
+    for element in elements:
+        if element.tag not in allowed_html_tags:
+            error = (">>> Element <{0}> is not allowed.\n").format(element.tag)
+            errors = (errors or '') + error
+        if element.tag == 'a' and element.get('target') == '_blank':
+            rel = element.get('rel') or ''
+            if rel.find('noopener') == -1 or rel.find('noreferrer') == -1:
+                error = (">>> Element <a> with target=_blank must set "
+                         "rel='noopener noreferrer'\n")
+                errors = (errors or '') + error
+        rec_errors = validate_elements_tags(list(element))
+        if rec_errors is not None:
+            errors = (errors or '') + rec_errors
+    return errors
+
+
+def validate_tags_in_transifex_string(string_tag):
+    """Validates that all child elements of a <string> are allowed"""
+    string_text = textify_from_transifex(string_tag)
+    string_text = (string_text.replace('&lt;', '<')
+                              .replace('&gt;', '>'))
+    #print '{}'.format(string_text.encode('utf-8'))
+    string_xml = lxml.etree.fromstring('<string>' + string_text + '</string>')
+    errors = validate_elements_tags(list(string_xml))
+    if errors is not None:
+        errors = ("--------------------\n"
+                  "<string>\n\t{0}\n</string>\n").format( \
+                  string_text.encode('utf-8')) + errors
+    return errors
+
+
+def validate_tags_in_transifex_strings(xml_content):
+    """Validates that all child elements of all <string>s are allowed"""
+    xml = lxml.etree.fromstring(xml_content)
+    string_tags = xml.findall('.//string')
+    errors = None
+    for string_tag in string_tags:
+        lxml.etree.strip_tags(string_tag, 'ph')
+        lxml.etree.strip_elements(string_tag, 'ex')
+        error = validate_tags_in_transifex_string(string_tag)
+        if error is not None:
+            errors = (errors or '') + error
+    if errors is not None:
+        errors = ("\n") + errors
+    return errors
+
+
 def trim_ph_tags_in_xtb_file_content(xml_content):
-    """Removes all children of <ph> tags including $X and %X text inside ph tag"""
+    """Removes all children of <ph> tags including text inside ph tag"""
     xml = lxml.etree.fromstring(xml_content)
     phs = xml.findall('.//ph')
     for ph in phs:
-        lxml.etree.strip_elements(ph, '*', with_tail=False)
-        if ph.text is not None and (ph.text.startswith('$') or ph.text.startswith('%')):
+        lxml.etree.strip_elements(ph, '*')
+        if ph.text is not None:
             ph.text = ''
     return lxml.etree.tostring(xml)
 
@@ -397,6 +454,7 @@ def generate_source_strings_xml_from_grd(output_xml_file_handle,
     resources_tag = create_android_format_resources_tag()
     all_strings = get_grd_strings(grd_file_path)
     for (string_name, string_value, fp, desc) in all_strings:
+        # TODO(max): validate string_value for tags here
         resources_tag.append(
             create_android_format_string_tag(string_name, string_value))
     print 'Generating %d strings for GRD: %s' % (
@@ -662,6 +720,8 @@ def pull_source_files_from_transifex(source_file_path, filename):
             xml_content = get_transifex_translation_file_content(
                 source_file_path, filename, lang_code)
             xml_content = fixup_bad_ph_tags_from_raw_transifex_string(xml_content)
+            errors = validate_tags_in_transifex_strings(xml_content)
+            assert errors is None, errors
             xml_content = trim_ph_tags_in_xtb_file_content(xml_content)
             translations = get_strings_dict_from_xml_content(xml_content)
             xtb_content = generate_xtb_content(lang_code, grd_strings,

@@ -41,11 +41,11 @@ class PerHourFrequencyCap : public ExclusionRule {
 
   bool DoesRespectCap(
       const std::deque<uint64_t>& history,
-      const CreativeAdInfo& ad) const;
+      const CreativeAdInfo& ad);
 
   std::deque<uint64_t> FilterHistory(
       const std::deque<AdHistory>& history,
-      const std::string& creative_instance_id) const;
+      const std::string& creative_instance_id);
 };
 
 }  // namespace ads

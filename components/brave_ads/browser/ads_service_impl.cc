@@ -20,6 +20,7 @@
 #include "base/guid.h"
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
+#include "base/numerics/ranges.h"
 #include "base/sequenced_task_runner.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
@@ -544,12 +545,12 @@ bool AdsServiceImpl::ShouldAllowAdConversionTracking() const {
   return GetBooleanPref(prefs::kShouldAllowAdConversionTracking);
 }
 
-uint64_t AdsServiceImpl::GetAdsPerHour() const {
-  return GetUint64Pref(prefs::kAdsPerHour);
+uint64_t AdsServiceImpl::GetAdsPerHour() {
+  return base::ClampToRange(GetUint64Pref(prefs::kAdsPerHour), 1ULL, 5ULL);
 }
 
-uint64_t AdsServiceImpl::GetAdsPerDay() const {
-  return GetUint64Pref(prefs::kAdsPerDay);
+uint64_t AdsServiceImpl::GetAdsPerDay() {
+  return base::ClampToRange(GetUint64Pref(prefs::kAdsPerDay), 1ULL, 20ULL);
 }
 
 bool AdsServiceImpl::ShouldAllowAdsSubdivisionTargeting() const {
@@ -920,6 +921,14 @@ bool AdsServiceImpl::IsDebug() const {
   #else
     return true;
   #endif
+}
+
+uint64_t AdsServiceImpl::ClampToRange(
+    const uint64_t value,
+    const uint64_t min,
+    const uint64_t max) {
+  const uint64_t clamped_value = base::ClampToRange(value, min, max);
+  return clamped_value;
 }
 
 void AdsServiceImpl::StartCheckIdleStateTimer() {

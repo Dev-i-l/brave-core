@@ -43,7 +43,7 @@ std::string MinimumWaitTimeFrequencyCap::get_last_message() const {
 }
 
 bool MinimumWaitTimeFrequencyCap::DoesRespectCap(
-    const std::deque<uint64_t>& history) const {
+    const std::deque<uint64_t>& history) {
   const uint64_t time_constraint =
       base::Time::kSecondsPerHour / ads_->get_ads_client()->GetAdsPerHour();
 
@@ -54,7 +54,7 @@ bool MinimumWaitTimeFrequencyCap::DoesRespectCap(
 }
 
 std::deque<uint64_t> MinimumWaitTimeFrequencyCap::FilterHistory(
-    const std::deque<AdHistory>& history) const {
+    const std::deque<AdHistory>& history) {
   std::deque<uint64_t> filtered_history;
 
   for (const auto& ad : history) {

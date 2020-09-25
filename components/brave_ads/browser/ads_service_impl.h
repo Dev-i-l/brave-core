@@ -157,8 +157,8 @@ class AdsServiceImpl : public AdsService,
 
   bool ShouldAllowAdConversionTracking() const override;
 
-  uint64_t GetAdsPerHour() const override;
-  uint64_t GetAdsPerDay() const override;
+  uint64_t GetAdsPerHour() override;
+  uint64_t GetAdsPerDay() override;
 
   bool ShouldAllowAdsSubdivisionTargeting() const override;
   void SetAllowAdsSubdivisionTargeting(
@@ -221,6 +221,11 @@ class AdsServiceImpl : public AdsService,
 
   void UpdateIsDebugFlag();
   bool IsDebug() const;
+
+  uint64_t ClampToRange(
+      const uint64_t value,
+      const uint64_t min,
+      const uint64_t max);
 
   void StartCheckIdleStateTimer();
   void CheckIdleState();

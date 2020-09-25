@@ -38,10 +38,10 @@ class AdsPerHourFrequencyCap : public PermissionRule {
   std::string last_message_;
 
   bool DoesRespectCap(
-      const std::deque<uint64_t>& history) const;
+      const std::deque<uint64_t>& history);
 
   std::deque<uint64_t> FilterHistory(
-      const std::deque<AdHistory>& history) const;
+      const std::deque<AdHistory>& history);
 };
 
 }  // namespace ads
